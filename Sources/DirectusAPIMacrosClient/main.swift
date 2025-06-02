@@ -1,8 +1,11 @@
 import DirectusAPIMacros
 
-let a = 17
-let b = 25
+protocol Test1 {}
+protocol Test2 {}
+protocol DirectusCollection {}
 
-let (result, code) = #stringify(a + b)
-
-print("The value \(result) was produced by the code \"\(code)\"")
+@DirectusClassRegistration
+@DirectusAddToCollectionList(Test1.self, Test2.self, Test1.self)
+class TestClass: DirectusCollection {
+    var string = "Test"
+}
