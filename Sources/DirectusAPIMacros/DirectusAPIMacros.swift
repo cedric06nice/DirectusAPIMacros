@@ -24,7 +24,7 @@
 ///
 ///     @DirectusAddToCollectionList(Class1.self, ...)
 ///
-@attached(member, names: named(collectionMetadata), named(init(_:)))
+@attached(member, names: named(collectionMetadata), named(_register), named(init(_:)))
 public macro DirectusClassRegistration(
     endpointName: String,
     defaultFields: String = "*",
