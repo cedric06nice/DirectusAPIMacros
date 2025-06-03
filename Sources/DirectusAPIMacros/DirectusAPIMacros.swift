@@ -2,13 +2,22 @@
 // https://docs.swift.org/swift-book
 
 /// Implementation of the `@DirectusClassRegistration` macro
-/// Use on a class conforming to `DirectusCollection` protocol
-/// to register the class.
+/// Use on a class conforming to both `DirectusData` and
+/// `DirectusCollection` protocols.
 ///
 /// Use the macro as follow:
 ///
-///     @DirectusClassRegistration
-///     class YourClass: DirectusCollection {}
+///     @DirectusClassRegistration(
+///         endpointName: String,
+///         defaultFields: String = "*",
+///         endpointPrefix: String = "/items/",
+///         webSocketEndPoint: String? = nil,
+///         defaultUpdateFields: String? = nil)
+///     class YourClass: DirectusData, DirectusCollection {
+///         var name: String
+///         var description: String?
+///         var children: [String]
+///     }
 ///
 /// Do not forget to add the class to the CollectionList on the `main` view
 /// to avoid any crashes.
@@ -16,10 +25,17 @@
 ///     @DirectusAddToCollectionList(Class1.self, ...)
 ///
 @attached(member, names: named(_register))
-public macro DirectusClassRegistration() = #externalMacro(
+public macro DirectusClassRegistration(
+    endpointName: String,
+    defaultFields: String = "*",
+    endpointPrefix: String = "/items/",
+    webSocketEndPoint: String? = nil,
+    defaultUpdateFields: String? = nil
+) = #externalMacro(
     module: "DirectusAPIMacrosMacros",
     type: "DirectusClassRegistration"
 )
+
 
 /// Implementation of the `@DirectusAddToCollectionList()` macro
 /// to register the class.

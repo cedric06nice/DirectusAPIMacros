@@ -1,3 +1,4 @@
+import Foundation
 import SwiftCompilerPlugin
 import SwiftSyntax
 import SwiftSyntaxBuilder
@@ -6,11 +7,13 @@ import SwiftSyntaxMacros
 enum RegisterCollectionError: CustomStringConvertible, Error {
     case onlyApplicableToClasses
     case notConformingToProtocol(String)
+    case mustProvideClassesToAddToCollection
     
     var description: String {
         switch self {
         case .onlyApplicableToClasses: return "@DirectusClassRegistration can only be applied to classes"
         case .notConformingToProtocol(let name): return "@DirectusClassRegistration can only be applied to class conforming to protocol '\(name)'"
+        case .mustProvideClassesToAddToCollection: return "@DirectusAddToCollectionList requires that you provide at least one class to add to the collection"
         }
     }
 }
@@ -22,34 +25,131 @@ struct DirectusClassRegistration: MemberMacro {
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        guard let classDecl = declaration.as(ClassDeclSyntax.self) else {
-            throw RegisterCollectionError.onlyApplicableToClasses
-        }
-        var protocols: [String] = []
-        if let protocolsConformance: InheritedTypeListSyntax = classDecl.inheritanceClause?.inheritedTypes {
-            _ = protocolsConformance.map { type in
-                if let syn = type.type.as(IdentifierTypeSyntax.self) {
-                    protocols.append(String(syn.name.text))
+        
+        try checkErrors(fromDeclaration: declaration)
+        
+        let collectionMetadata = getCollectionMetadata(fromNode: node)
+        
+        let initializer = getClassInit(fromDeclaration: declaration)
+        
+        return [
+            collectionMetadata,
+            initializer
+        ]
+        
+        func checkErrors(fromDeclaration declaration: some DeclGroupSyntax) throws {
+            guard let classDecl = declaration.as(ClassDeclSyntax.self) else {
+                throw RegisterCollectionError.onlyApplicableToClasses
+            }
+            var protocols: [String] = []
+            if let protocolsConformance: InheritedTypeListSyntax = classDecl.inheritanceClause?.inheritedTypes {
+                _ = protocolsConformance.map { type in
+                    if let syn = type.type.as(IdentifierTypeSyntax.self) {
+                        protocols.append(String(syn.name.text))
+                    }
                 }
             }
+            if protocols.isEmpty {
+                throw RegisterCollectionError.notConformingToProtocol("DirectusData, DirectusCollection")
+            }
+            if !protocols.contains(where: { $0 == "DirectusData" }) {
+                throw RegisterCollectionError.notConformingToProtocol("DirectusData")
+            }
+            if !protocols.contains(where: { $0 == "DirectusCollection" }) {
+                throw RegisterCollectionError.notConformingToProtocol("DirectusCollection")
+            }
         }
-        if protocols.isEmpty
-            || protocols.contains(where: { $0 != "DirectusCollection" }) {
-            throw RegisterCollectionError.notConformingToProtocol("DirectusCollection")
-        }
-        let className = classDecl.name.text
-        let registerContent: DeclSyntax =
-            """
+        
+        func getCollectionMetadata(fromNode node: AttributeSyntax) -> DeclSyntax {
             
-            // Expended macro DirectusClassRegistration
-            @MainActor
-            public static let _register: Void = {
-                CollectionMetadataRegistry.register(\(raw: className).self)
-            }()
-            """
-        return [
-            registerContent
-        ]
+            guard let argumentList: LabeledExprListSyntax = node.arguments?.as(LabeledExprListSyntax.self) else {
+                return DeclSyntax(stringLiteral: "")
+            }
+            
+            var userValues: Set<[String:String]> = []
+            
+            for argument in argumentList {
+                let label = argument.label?.text ?? ""
+                let expression: ExprSyntax = argument.expression
+                let description: String = expression.description
+                userValues.insert([label: description])
+            }
+            
+            let endpointName = userValues
+                .first(where: { $0.keys.contains("endpointName") })?["endpointName"]
+            let defaultFields = userValues
+                .first(where: { $0.keys.contains("defaultFields") })?["defaultFields"] ?? "\"*\""
+            let endpointPrefix = userValues
+                .first(where: { $0.keys.contains("endpointPrefix") })?["endpointPrefix"] ?? "\"/items/\""
+            let webSocketEndPoint = userValues
+                .first(where: { $0.keys.contains("webSocketEndPoint") })?["webSocketEndPoint"] ?? nil
+            let defaultUpdateFields = userValues
+                .first(where: { $0.keys.contains("defaultUpdateFields") })?["defaultUpdateFields"] ?? nil
+            
+            let collectionMetadata: DeclSyntax =
+                """
+                
+                // Generated by @DirectusClassRegistration macro
+                public static let collectionMetadata = CollectionMetadata(
+                    endpointName: \(raw: endpointName ?? ""),
+                    defaultFields: \(raw: defaultFields),
+                    endpointPrefix: \(raw: endpointPrefix),
+                    webSocketEndPoint: \(raw: webSocketEndPoint ?? "nil"),
+                    defaultUpdateFields: \(raw: defaultUpdateFields ?? "nil")
+                )
+                """
+            return collectionMetadata
+        }
+        
+        func getClassInit(fromDeclaration declaration: some DeclGroupSyntax) -> DeclSyntax {
+            guard let classDecl = declaration.as(ClassDeclSyntax.self) else {
+                return DeclSyntax(stringLiteral: "")
+            }
+            
+            var assignments: [String] = []
+            
+            for member in classDecl.memberBlock.members {
+                guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+                      (varDecl.bindingSpecifier.tokenKind == .keyword(.var)
+                       || varDecl.bindingSpecifier.tokenKind == .keyword(.let)) else {
+                    continue
+                }
+                
+                for binding in varDecl.bindings {
+                    guard let identifier = binding.pattern.as(IdentifierPatternSyntax.self) else { continue }
+                    let name = identifier.identifier.text
+                    
+                    let typeDesc = binding.typeAnnotation?.type.description.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    let isOptional = typeDesc.contains("?")
+                    let isArray = typeDesc.contains("[")
+                    
+                    let defaultValue: String
+                    if isOptional {
+                        defaultValue = "as? \(typeDesc)"
+                    } else if isArray {
+                        defaultValue = "as? \(typeDesc) ?? []"
+                    } else {
+                        defaultValue = "as? \(typeDesc) ?? \(typeDesc == "String" ? "\"\"" : "0")"
+                    }
+                    
+                    let assignment = "self.\(name) = rawReceivedData[\"\(name)\"] \(defaultValue)"
+                    assignments.append(assignment)
+                }
+            }
+            
+            let lines = assignments.joined(separator: "\n    ")
+            
+            return DeclSyntax(stringLiteral:
+        """
+        
+        // Generated by @DirectusClassRegistration macro
+        required init(_ rawReceivedData: [String : Any]) throws {
+            \(lines)
+            try super.init(rawReceivedData)
+        }
+        """
+            )
+        }
     }
 }
 
@@ -60,21 +160,32 @@ struct DirectusAddToCollectionList: MemberMacro {
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        var arguments: [DeclSyntax] = [
-            DeclSyntax(stringLiteral: "// Expended macro DirectusAddToCollectionList")
-        ]
-        var removeDuplicates: Set<String> = []
         guard let providedArguments = node.arguments?.as(LabeledExprListSyntax.self) else {
-            return []
+            throw RegisterCollectionError.mustProvideClassesToAddToCollection
         }
-        _ = providedArguments.compactMap { (list: LabeledExprSyntax) in
-            let trimmedDescription = list.expression.description.replacingOccurrences(of: ".self", with: "")
+        
+        var assignments: [String] = []
+        var removeDuplicates: Set<String> = []
+
+        for argument in providedArguments {
+            let trimmedDescription = argument.expression.description
+                .replacingOccurrences(of: ".self",with: "")
             if !removeDuplicates.contains(trimmedDescription) {
                 removeDuplicates.insert(trimmedDescription)
-                arguments.append(DeclSyntax(stringLiteral: "let _ = \(trimmedDescription)._register"))
+                let assignment = "let _ = \(trimmedDescription)._register"
+                assignments.append(assignment)
             }
         }
-        return arguments
+        
+        let lines = assignments.joined(separator: "\n")
+        
+        return [DeclSyntax(stringLiteral:
+        """
+        
+        // Generated by @DirectusAddToCollectionList macro
+        \(lines)
+        """
+        )]
     }
 }
 

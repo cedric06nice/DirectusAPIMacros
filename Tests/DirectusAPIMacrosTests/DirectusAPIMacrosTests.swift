@@ -22,17 +22,28 @@ final class DirectusAPIMacrosTests {
         #if canImport(DirectusAPIMacrosMacros)
         assertMacroExpansion(
             """
-            @DirectusClassRegistration
-            class TestingMacro: String, DirectusCollection, Codable {
-                let constant: String
+            @DirectusClassRegistration(endpointName: "roles", endpointPrefix: "/")
+            class TestingMacro: DirectusData, DirectusCollection, Codable {
+                var name: String
+                var icon: String
+                var description: String?
+                var policies: [String]
+                var parent: String?
+                var children: [String]
+                var users: [String]
             }
             """,
             expandedSource: """
-            class TestingMacro: String, DirectusCollection, Codable {
-                let constant: String
+            class TestingMacro: DirectusData, DirectusCollection, Codable {
+                var name: String
+                var icon: String
+                var description: String?
+                var policies: [String]
+                var parent: String?
+                var children: [String]
+                var users: [String]
             
                 // Expended macro DirectusClassRegistration
-                @MainActor
                 public static let _register: Void = {
                     CollectionMetadataRegistry.register(TestingMacro.self)
                 }()
