@@ -2,8 +2,8 @@ import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import Testing
 
-#if canImport(DirectusAPIMacrosMacros)
-@testable import DirectusAPIMacrosMacros
+#if canImport(DirectusAPIMacrosImpl)
+@testable import DirectusAPIMacrosImpl
 
 let testDirectusClassRegistrationMacro: [String: Macro.Type] = [
     "DirectusClassRegistration": DirectusClassRegistration.self
@@ -19,7 +19,7 @@ final class DirectusAPIMacrosTests {
     
     @Test("DirectusClassRegistration")
     func testDirectusClassRegistration() throws {
-        #if canImport(DirectusAPIMacrosMacros)
+        #if canImport(DirectusAPIMacrosImpl)
         assertMacroExpansion(
             """
             @DirectusClassRegistration(endpointName: "roles", endpointPrefix: "/")
@@ -59,7 +59,7 @@ final class DirectusAPIMacrosTests {
     // This cannot be tested at runtime - Will always pass
     @Test("DirectusClassRegistration on a struct")
     func testDirectusClassRegistrationOnAStruct() throws {
-        #if canImport(DirectusAPIMacrosMacros)
+        #if canImport(DirectusAPIMacrosImpl)
         assertMacroExpansion(
             """
             @DirectusClassRegistration
@@ -85,7 +85,7 @@ final class DirectusAPIMacrosTests {
     // This cannot be tested at runtime - Will always pass
     @Test("DirectusClassRegistration on a class not conforming to DirectusCollection")
     func testRegisterCollectionOnClassNonConformingToDirectusCollection() throws {
-        #if canImport(DirectusAPIMacrosMacros)
+        #if canImport(DirectusAPIMacrosImpl)
         assertMacroExpansion(
             """
             @DirectusClassRegistration
@@ -111,7 +111,7 @@ final class DirectusAPIMacrosTests {
     // This cannot be tested at runtime - Will always pass
     @Test("DirectusAddToCollectionList")
     func testDirectusAddToCollectionList() throws {
-        #if canImport(DirectusAPIMacrosMacros)
+        #if canImport(DirectusAPIMacrosImpl)
         assertMacroExpansion(
             """
             @DirectusAddToCollectionList(Test1.self, Test2.self, Test3.self)

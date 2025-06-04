@@ -36,7 +36,7 @@ public macro DirectusClassRegistration(
     webSocketEndPoint: String? = nil,
     defaultUpdateFields: String? = nil
 ) = #externalMacro(
-    module: "DirectusAPIMacrosMacros",
+    module: "DirectusAPIMacrosImpl",
     type: "DirectusClassRegistration"
 )
 
@@ -55,6 +55,6 @@ protocol DirectusDataCollection {}
 ///
 @attached(member, names: named(_register))
 public macro DirectusAddToCollectionList(_: Any...) = #externalMacro(
-    module: "DirectusAPIMacrosMacros",
+    module: "DirectusAPIMacrosImpl",
     type: "DirectusAddToCollectionList"
 )

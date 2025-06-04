@@ -22,13 +22,13 @@ let package = Package(
     ],
     targets: [
         .macro(
-            name: "DirectusAPIMacrosMacros",
+            name: "DirectusAPIMacrosImpl",
             dependencies: [
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
             ]
         ),
-        .target(name: "DirectusAPIMacros", dependencies: ["DirectusAPIMacrosMacros"]),
+        .target(name: "DirectusAPIMacros", dependencies: ["DirectusAPIMacrosImpl"]),
         .executableTarget(name: "DirectusAPIMacrosClient", dependencies: ["DirectusAPIMacros"]),
         .testTarget(
             name: "DirectusAPIMacrosTests",
