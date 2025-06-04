@@ -27,7 +27,7 @@
 @attached(
     member,
     conformances: DirectusDataCollection,
-    names: named(collectionMetadata), named(_register), named(init(_:))
+    names: named(collectionMetadata), named(DirectusDataCollection), named(_register), named(init(_:))
 )
 public macro DirectusClassRegistration(
     endpointName: String,
