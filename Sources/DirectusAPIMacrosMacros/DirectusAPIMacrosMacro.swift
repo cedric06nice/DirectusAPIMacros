@@ -44,23 +44,6 @@ struct DirectusClassRegistration: MemberMacro {
             guard let classDecl = declaration.as(ClassDeclSyntax.self) else {
                 throw RegisterCollectionError.onlyApplicableToClasses
             }
-            var protocols: [String] = []
-            if let protocolsConformance: InheritedTypeListSyntax = classDecl.inheritanceClause?.inheritedTypes {
-                _ = protocolsConformance.map { type in
-                    if let syn = type.type.as(IdentifierTypeSyntax.self) {
-                        protocols.append(String(syn.name.text))
-                    }
-                }
-            }
-            if protocols.isEmpty {
-                throw RegisterCollectionError.notConformingToProtocol("DirectusData, DirectusCollection")
-            }
-            if !protocols.contains(where: { $0 == "DirectusData" }) {
-                throw RegisterCollectionError.notConformingToProtocol("DirectusData")
-            }
-            if !protocols.contains(where: { $0 == "DirectusCollection" }) {
-                throw RegisterCollectionError.notConformingToProtocol("DirectusCollection")
-            }
         }
         
         func getCollectionMetadata(fromNode node: AttributeSyntax) -> DeclSyntax {

@@ -23,7 +23,7 @@ final class DirectusAPIMacrosTests {
         assertMacroExpansion(
             """
             @DirectusClassRegistration(endpointName: "roles", endpointPrefix: "/")
-            class TestingMacro: DirectusData, DirectusCollection, Codable {
+            class TestingMacro: Codable {
                 var name: String
                 var icon: String
                 var description: String?

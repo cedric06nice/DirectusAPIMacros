@@ -24,7 +24,11 @@
 ///
 ///     @DirectusAddToCollectionList(Class1.self, ...)
 ///
-@attached(member, names: named(collectionMetadata), named(_register), named(init(_:)))
+@attached(
+    member,
+    conformances: DirectusData, DirectusCollection,
+    names: named(collectionMetadata), named(_register), named(init(_:))
+)
 public macro DirectusClassRegistration(
     endpointName: String,
     defaultFields: String = "*",
@@ -36,6 +40,8 @@ public macro DirectusClassRegistration(
     type: "DirectusClassRegistration"
 )
 
+protocol DirectusData {}
+protocol DirectusCollection {}
 
 /// Implementation of the `@DirectusAddToCollectionList()` macro
 /// to register the class.
