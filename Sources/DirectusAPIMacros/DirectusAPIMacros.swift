@@ -26,7 +26,7 @@
 ///
 @attached(
     member,
-    conformances: DirectusData, DirectusCollection,
+    conformances: DirectusDataCollection,
     names: named(collectionMetadata), named(_register), named(init(_:))
 )
 public macro DirectusClassRegistration(
@@ -40,8 +40,7 @@ public macro DirectusClassRegistration(
     type: "DirectusClassRegistration"
 )
 
-protocol DirectusData {}
-protocol DirectusCollection {}
+protocol DirectusDataCollection {}
 
 /// Implementation of the `@DirectusAddToCollectionList()` macro
 /// to register the class.
