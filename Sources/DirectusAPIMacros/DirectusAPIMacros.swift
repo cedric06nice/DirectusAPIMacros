@@ -26,8 +26,7 @@
 ///
 @attached(
     member,
-    conformances: DirectusDataCollection,
-    names: named(collectionMetadata), named(DirectusDataCollection), named(_register), named(init(_:))
+    names: named(collectionMetadata), named(_register), named(init(_:))
 )
 public macro DirectusClassRegistration(
     endpointName: String,
@@ -40,20 +39,31 @@ public macro DirectusClassRegistration(
     type: "DirectusClassRegistration"
 )
 
-protocol DirectusDataCollection {}
-
 /// Implementation of the `@DirectusAddToCollectionList()` macro
 /// to register the class.
 ///
-/// Use the macro as follow:
+/// Prefix the main view with the macro and add
+/// `MetadataFactory.registerDirectusCollections()`
+/// to the task modifier of the inside view
 ///
 ///     @DirectusAddToCollectionList(Class1.self, ...)
 ///     @main
-///     struct MyApp: App {}
+///     struct MyApp: App {
+///         var body: some Scene {
+///             WindowGroup {
+///                 Group {
+///                     ContentView()
+///                         .task {
+///                             MetadataFactory.registerDirectusCollections()
+///                         }
+///                 }
+///             }
+///         }
+///     }
 ///
 /// Add all the classes prefixed with the `@DirectusClassRegistration` macro.
 ///
-@attached(member, names: named(_register))
+@attached(member, names: named(body))
 public macro DirectusAddToCollectionList(_: Any...) = #externalMacro(
     module: "DirectusAPIMacrosImpl",
     type: "DirectusAddToCollectionList"

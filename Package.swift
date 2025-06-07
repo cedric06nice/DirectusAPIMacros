@@ -33,9 +33,9 @@ let package = Package(
         .testTarget(
             name: "DirectusAPIMacrosTests",
             dependencies: [
-                "DirectusAPIMacros",
+                "DirectusAPIMacrosImpl",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
-        ),
+        )
     ]
 )
