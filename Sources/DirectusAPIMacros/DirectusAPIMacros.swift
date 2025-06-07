@@ -63,7 +63,7 @@ public macro DirectusClassRegistration(
 ///
 /// Add all the classes prefixed with the `@DirectusClassRegistration` macro.
 ///
-@attached(member, names: named(body))
+@attached(member, names: named(MetadataFactory))
 public macro DirectusAddToCollectionList(_: Any...) = #externalMacro(
     module: "DirectusAPIMacrosImpl",
     type: "DirectusAddToCollectionList"
